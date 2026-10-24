@@ -144,7 +144,7 @@ function Recent({ t, items }) {
             <tr key={r.id}>
               <td className="m">{clock(r.created_at)}</td><td title={r.model ?? ''}>{r.model ?? '–'}</td>
               <td className="r">{r.usage ? `${tokens(r.usage.inputTokens)} / ${tokens((r.usage.outputTokens ?? 0) + (r.usage.reasoningTokens ?? 0))}` : '–'}</td>
-              <td className={`r${failed ? ' bad' : ''}`}>{failed ? t('recent.failed', { code: r.failure_code ?? r.status }) : r.status === 'running' ? '…' : usdc(r.charged_atomic, 4)}</td>
+              <td className={`r${failed ? ' bad' : ''}`} title={failed ? (r.failure_code ?? r.status) : ''}>{failed ? t('recent.failed') : r.status === 'running' ? '…' : usdc(r.charged_atomic, 4)}</td>
             </tr>);
         })}</tbody>
       </table>
