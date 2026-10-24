@@ -16,8 +16,7 @@
     "cordis.patch.yml"
   ],
   "scripts": {
-    "build": "node build.mjs",
-    "prepare": "node build.mjs"
+    "build": "node build.mjs"
   },
   "engines": {
     "dsh": ">=0.2.1-rc.3 <0.3.0"
