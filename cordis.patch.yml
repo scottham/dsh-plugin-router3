@@ -1,0 +1,7 @@
+# The Router3 panel: one host row. Its browser half rides on this row.
+- insert:
+    - id: router3
+      name: dsh-plugin-router3
+      config:
+        baseUrl: https://router3.ai
+        credential: ROUTER3_API_KEY
