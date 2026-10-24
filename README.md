@@ -7,8 +7,8 @@ It reads with the API key you already configured for the Router3 model provider.
 ## Install
 
 ```sh
-dsh plugin --profile web add dsh-plugin-router3        # Web UI
-dsh plugin --profile desktop add dsh-plugin-router3    # Desktop app
+dsh plugin --profile web add github:scottham/dsh-plugin-router3        # Web UI
+dsh plugin --profile desktop add github:scottham/dsh-plugin-router3    # Desktop app
 ```
 
 Then, in **Settings → Models**, add Router3 as a *Custom model API* with provider id `router3`, base URL `https://router3.ai/v1`, protocol *OpenAI Chat Completions*, and your `r3_live_…` key. The key is saved by dsh under the reference `ROUTER3_API_KEY`; the panel reads the same reference. Open the right sidebar and pick **Router3** on the guide page.
@@ -28,7 +28,7 @@ All three Router3 endpoints are read-only and authenticated by the API key alone
 
 - `src/index.js` — host half. Registers `/api/router3/{summary,usage,requests}` on dsh's authenticated API channel, resolves the key through `ctx.credentials` on every call, and relays to Router3.
 - `src/client/` — browser half. Registers the `router3` tab type and its body on the right sidebar.
-- `build.mjs` — emits `lib/client.js` in dsh's client-module factory format (React and the UI primitives stay external) and copies the host half to `lib/index.js`.
+- `build.mjs` — emits `lib/client.js` in dsh's client-module factory format (React and the UI primitives stay external) and copies the host half to `lib/index.js`. `lib/` is committed so a `github:` install needs no build step.
 
 Configuration (`cordis.patch.yml`, override in your profile):
 
