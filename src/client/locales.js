@@ -43,8 +43,10 @@ export const en = {
   'error.unreachable': 'Router3 is unreachable: {message}',
   'error.key': 'Router3 rejected the API key. Check it on the Models page.',
   'error.other': 'Router3 answered {status}.',
+  'source.label': 'Key',
   'setup.title': 'Connect Router3',
-  'setup.body': 'Add Router3 as a custom model API on the Models page with provider id "router3" and base URL https://router3.ai/v1, and paste your API key there. This panel reads the same key ({credential}).',
+  'setup.body': 'No Router3 key found. On the Models page add a custom model API with base URL https://router3.ai/v1 and paste your r3_live_ key; this panel finds it by itself. Several providers with Router3 keys become a picker here.',
+  'setup.missingKey': 'The Router3 provider {names} has no API key yet. Paste one on the Models page.',
   'setup.open': 'Open Models settings'
 };
 
@@ -92,7 +94,9 @@ export const zh = {
   'error.unreachable': '连不上 Router3：{message}',
   'error.key': 'Router3 拒绝了这个 API Key，请到「模型」页检查。',
   'error.other': 'Router3 返回 {status}。',
+  'source.label': 'Key',
   'setup.title': '连接 Router3',
-  'setup.body': '在「模型」页新建 Custom model API：Provider ID 填 router3，Base URL 填 https://router3.ai/v1，再粘贴 API Key。本面板读取同一把 Key（{credential}）。',
+  'setup.body': '没有找到 Router3 Key。在「模型」页新建 Custom model API，Base URL 填 https://router3.ai/v1，粘贴 r3_live_ 开头的 Key，本面板会自动找到。多个 Router3 Key 时这里会出现切换。',
+  'setup.missingKey': 'Router3 供应商 {names} 还没有 API Key，到「模型」页粘贴一把。',
   'setup.open': '打开模型设置'
 };

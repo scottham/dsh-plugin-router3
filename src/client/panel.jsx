@@ -1,6 +1,6 @@
 // The panel body. Everything it shows comes from the host half's
 // /api/router3 routes; it keeps nothing but what it last fetched.
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 const USDC = 1e6;
 const usdc = (atomic, digits = 2) => atomic == null ? '–' : (Number(atomic) / USDC).toFixed(digits);
@@ -39,13 +39,31 @@ function useNow(ms = 5000) {
   return now;
 }
 
-const loadSummary = () => api('api/router3/summary');
-const loadUsage = () => api('api/router3/usage?days=30');
-const loadRequests = () => api('api/router3/requests?limit=8');
+const loadSources = () => api('api/router3/sources');
+const CHOICE = 'dsh-plugin-router3.source';
+const remembered = () => { try { return localStorage.getItem(CHOICE); } catch { return null; } };
+const remember = (id) => { try { localStorage.setItem(CHOICE, id); } catch { /* per-viewer convenience only */ } };
+
+// Which Router3 key to read: the host lists every configured model provider
+// that holds one (`sources`); the viewer's pick is remembered in this
+// browser, and falls back to the host's default when it is gone.
+function useSource(visible) {
+  const sources = usePolled(loadSources, 60000, visible);
+  const [chosen, setChosen] = useState(remembered);
+  const list = sources.data?.sources ?? [];
+  const usable = list.filter((s) => s.configured);
+  const current = usable.find((s) => s.id === chosen)?.id ?? sources.data?.default ?? null;
+  return { list, usable, current, loaded: sources.data != null, error: sources.error, choose: (id) => { remember(id); setChosen(id); } };
+}
 
 export function Panel({ t, hooks }) {
   const info = hooks?.tabInfo ? hooks.tabInfo() : null;
   const visible = info?.tab?.visible ?? true;
+  const source = useSource(visible);
+  const q = source.current ? `&source=${encodeURIComponent(source.current)}` : '';
+  const loadSummary = useMemo(() => () => api(`api/router3/summary?${q.slice(1)}`), [q]);
+  const loadUsage = useMemo(() => () => api(`api/router3/usage?days=30${q}`), [q]);
+  const loadRequests = useMemo(() => () => api(`api/router3/requests?limit=8${q}`), [q]);
   const summary = usePolled(loadSummary, 15000, visible);
   const usage = usePolled(loadUsage, 60000, visible);
   const recent = usePolled(loadRequests, 20000, visible);
@@ -53,12 +71,20 @@ export function Panel({ t, hooks }) {
 
   if (summary.error && !summary.data) return <div className="r3-pane"><Failure t={t} error={summary.error} /></div>;
   if (!summary.data) return <div className="r3-pane"><div className="r3-note">{t('loading')}</div></div>;
-  if (summary.data.configured === false) return <div className="r3-pane"><Setup t={t} credential={summary.data.credential} /></div>;
+  if (summary.data.configured === false) return <div className="r3-pane"><Setup t={t} sources={summary.data.sources ?? source.list} /></div>;
 
   const { key, pool } = summary.data;
   const ago = Math.round((now - (summary.at ?? now)) / 1000);
   return (
     <div className="r3-pane">
+      {source.usable.length > 1 && (
+        <div className="r3-source">
+          <label htmlFor="r3-source">{t('source.label')}</label>
+          <select id="r3-source" value={source.current ?? ''} onChange={(e) => source.choose(e.target.value)}>
+            {source.usable.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+          </select>
+        </div>
+      )}
       <div className="r3-h"><span>{t('pool.title')}</span><span className="r3-state" data-state={pool?.state ?? 'none'}>{t(`state.${pool?.state ?? 'none'}`)}</span></div>
       <Cards t={t} keyData={key} pool={pool} />
       {usage.data && <Usage t={t} usage={usage.data} />}
@@ -158,11 +184,16 @@ function Failure({ t, error }) {
   return <div className="r3-err">{text}</div>;
 }
 
-function Setup({ t, credential }) {
+// No usable key. Providers that point at Router3 but hold no key are named,
+// so the fix is one paste on the Models page.
+function Setup({ t, sources }) {
+  const empty = sources.filter((s) => !s.configured);
   return (
     <div className="r3-setup">
       <h3>{t('setup.title')}</h3>
-      <p>{t('setup.body', { credential })}</p>
+      {empty.length > 0
+        ? <p>{t('setup.missingKey', { names: empty.map((s) => s.name).join(', ') })}</p>
+        : <p>{t('setup.body')}</p>}
     </div>
   );
 }

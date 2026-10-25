@@ -1,6 +1,6 @@
 {
   "name": "dsh-plugin-router3",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Router3 balance and usage panel for DeepSeek Harness (dsh): the prepaid pool, today's spend, usage by model and recent calls, read with the API key you already configured",
   "license": "MIT",
   "type": "module",

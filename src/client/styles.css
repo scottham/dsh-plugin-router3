@@ -30,3 +30,6 @@
 .r3-setup p { margin: 0 0 10px; color: var(--dsw-alias-label-secondary); }
 .r3-setup code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; }
 .r3-err { color: #d9736f; padding: 6px 0; }
+
+.r3-source { display: flex; align-items: center; gap: 6px; margin: 0 0 6px; font-size: 11px; color: var(--r3-muted, #888); }
+.r3-source select { flex: 1; min-width: 0; font: inherit; color: inherit; background: transparent; border: 1px solid color-mix(in srgb, currentColor 25%, transparent); border-radius: 4px; padding: 2px 4px; }
