@@ -144,6 +144,7 @@ function Usage({ t, usage }) {
         <>
           <div className="r3-h"><span>{t('models.title')}</span></div>
           <table className="r3-table">
+            <colgroup><col /><col style={{ width: '3.4em' }} /><col style={{ width: '3.8em' }} /><col style={{ width: '3.4em' }} /><col style={{ width: '4em' }} /></colgroup>
             <thead><tr><th>{t('models.model')}</th><th className="r">{t('models.calls')}</th><th className="r">{t('models.tokens')}</th><th className="r">{t('models.avg')}</th><th className="r">{t('models.cost')}</th></tr></thead>
             <tbody>{usage.models.slice(0, 8).map((m) => (
               <tr key={m.model ?? '-'}><td title={m.model ?? ''}>{m.model ?? '–'}</td><td className="r">{m.requests.toLocaleString()}</td>
@@ -163,6 +164,7 @@ function Recent({ t, items }) {
     <>
       <div className="r3-h"><span>{t('recent.title')}</span></div>
       <table className="r3-table">
+        <colgroup><col style={{ width: '5.8em' }} /><col /><col style={{ width: '6.2em' }} /><col style={{ width: '4em' }} /></colgroup>
         <thead><tr><th>{t('recent.time')}</th><th>{t('recent.model')}</th><th className="r">{t('recent.inOut')}</th><th className="r">{t('recent.cost')}</th></tr></thead>
         <tbody>{items.map((r) => {
           const failed = r.status !== 'completed' && r.status !== 'running';

@@ -18,9 +18,14 @@
 .r3-chart i { flex: 1; background: var(--dsw-alias-border-l3); border-radius: 2px 2px 0 0; min-height: 1px; }
 .r3-chart i.today { background: #4caf87; }
 .r3-axis { display: flex; justify-content: space-between; color: var(--dsw-alias-label-tertiary); font-size: 10px; margin-top: 4px; }
-.r3-table { width: 100%; border-collapse: collapse; }
-.r3-table th { text-align: left; color: var(--dsw-alias-label-tertiary); font-weight: 500; font-size: 11px; padding: 3px 0; border-bottom: 0.5px solid var(--dsw-alias-border-l3); }
-.r3-table td { padding: 4px 0; border-bottom: 0.5px solid var(--dsw-alias-border-l3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 0; }
+/* Fixed layout: the numeric columns take the width their <col> declares and
+   the model column takes everything that is left, however wide the panel.
+   (Auto layout with `max-width: 0` cells clipped the model name at its own
+   width in some engines even when the column had room.) */
+.r3-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.r3-table th { text-align: left; color: var(--dsw-alias-label-tertiary); font-weight: 500; font-size: 11px; padding: 3px 0; border-bottom: 0.5px solid var(--dsw-alias-border-l3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.r3-table td { padding: 4px 0; border-bottom: 0.5px solid var(--dsw-alias-border-l3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.r3-table td + td, .r3-table th + th { padding-left: 6px; }
 .r3-table td.r, .r3-table th.r { text-align: right; }
 .r3-table .m { color: var(--dsw-alias-label-secondary); }
 .r3-table .bad { color: #d9736f; }
