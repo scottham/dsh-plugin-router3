@@ -28,6 +28,9 @@
 .r3-table td + td, .r3-table th + th { padding-left: 6px; }
 .r3-table td.r, .r3-table th.r { text-align: right; }
 .r3-table .m { color: var(--dsw-alias-label-secondary); }
+.r3-table .n { color: var(--dsw-alias-label-tertiary); }
+.r3-table tr.link { cursor: pointer; }
+.r3-table tr.link:hover td { background: var(--dsw-alias-bg-layer-1); }
 .r3-table .bad { color: #d9736f; }
 .r3-foot { margin-top: 14px; color: var(--dsw-alias-label-tertiary); font-size: 11px; display: flex; justify-content: space-between; gap: 8px; }
 .r3-note { color: var(--dsw-alias-label-secondary); padding: 8px 0; }

@@ -1,6 +1,7 @@
 // The panel body. Everything it shows comes from the host half's
 // /api/router3 routes; it keeps nothing but what it last fetched.
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import { pair, readTrajectory } from './trajectory.js';
 
 const USDC = 1e6;
 const usdc = (atomic, digits = 2) => atomic == null ? '–' : (Number(atomic) / USDC).toFixed(digits);
@@ -56,10 +57,23 @@ function useSource(visible) {
   return { list, usable, current, loaded: sources.data != null, error: sources.error, choose: (id) => { remember(id); setChosen(id); } };
 }
 
-export function Panel({ t, hooks }) {
+const noSubscribe = () => () => {};
+const noSnapshot = () => undefined;
+
+// The current session's trajectory as dsh assembles it, read live so a call
+// made a moment ago pairs as soon as both sides know about it.
+function useRequests(trajectory, sessionId) {
+  const observable = useMemo(() => (trajectory && sessionId ? trajectory(sessionId) : null), [trajectory, sessionId]);
+  const subscribe = useCallback((listener) => (observable ? observable.subscribe(listener) : noSubscribe()), [observable]);
+  const snapshot = useSyncExternalStore(subscribe, observable ? () => observable.getSnapshot() : noSnapshot);
+  return useMemo(() => readTrajectory(snapshot), [snapshot]);
+}
+
+export function Panel({ t, hooks, sessionId, trajectory, locate }) {
   const info = hooks?.tabInfo ? hooks.tabInfo() : null;
   const visible = info?.tab?.visible ?? true;
   const source = useSource(visible);
+  const requests = useRequests(trajectory, sessionId);
   const q = source.current ? `&source=${encodeURIComponent(source.current)}` : '';
   const loadSummary = useMemo(() => () => api(`api/router3/summary?${q.slice(1)}`), [q]);
   const loadUsage = useMemo(() => () => api(`api/router3/usage?days=30${q}`), [q]);
@@ -88,7 +102,7 @@ export function Panel({ t, hooks }) {
       <div className="r3-h"><span>{t('pool.title')}</span><span className="r3-state" data-state={pool?.state ?? 'none'}>{t(`state.${pool?.state ?? 'none'}`)}</span></div>
       <Cards t={t} keyData={key} pool={pool} />
       {usage.data && <Usage t={t} usage={usage.data} />}
-      {recent.data && <Recent t={t} items={recent.data.items} />}
+      {recent.data && <Recent t={t} items={recent.data.items} requests={requests} locate={locate} />}
       {(summary.error || usage.error || recent.error) && <Failure t={t} error={summary.error ?? usage.error ?? recent.error} />}
       <div className="r3-foot">
         <span>{t('foot.key', { prefix: key.prefix })}</span>
@@ -158,18 +172,25 @@ function Usage({ t, usage }) {
   );
 }
 
-function Recent({ t, items }) {
+// Each call this session made shows its dsh request number; clicking the row
+// shows that request in the trajectory view. Calls from elsewhere show none.
+function Recent({ t, items, requests, locate }) {
+  const paired = useMemo(() => pair(items, requests), [items, requests]);
   if (!items.length) return <div className="r3-note">{t('empty.usage')}</div>;
+  const numbered = paired.size > 0;
   return (
     <>
       <div className="r3-h"><span>{t('recent.title')}</span></div>
       <table className="r3-table">
-        <colgroup><col style={{ width: '5.8em' }} /><col /><col style={{ width: '6.2em' }} /><col style={{ width: '4em' }} /></colgroup>
-        <thead><tr><th>{t('recent.time')}</th><th>{t('recent.model')}</th><th className="r">{t('recent.inOut')}</th><th className="r">{t('recent.cost')}</th></tr></thead>
+        <colgroup>{numbered && <col style={{ width: '2.4em' }} />}<col style={{ width: '6.4em' }} /><col /><col style={{ width: '6.2em' }} /><col style={{ width: '4em' }} /></colgroup>
+        <thead><tr>{numbered && <th className="n">#</th>}<th>{t('recent.time')}</th><th>{t('recent.model')}</th><th className="r">{t('recent.inOut')}</th><th className="r">{t('recent.cost')}</th></tr></thead>
         <tbody>{items.map((r) => {
           const failed = r.status !== 'completed' && r.status !== 'running';
+          const match = paired.get(r.id);
+          const hint = match ? t('recent.locate', { number: match.number, turn: match.turn, step: match.step }) : undefined;
           return (
-            <tr key={r.id}>
+            <tr key={r.id} className={match ? 'link' : undefined} title={hint} onClick={match && locate ? () => { locate(match); } : undefined}>
+              {numbered && <td className="n">{match ? match.number : ''}</td>}
               <td className="m">{clock(r.created_at)}</td><td title={r.model ?? ''}>{r.model ?? '–'}</td>
               <td className="r">{r.usage ? `${tokens(r.usage.inputTokens)} / ${tokens((r.usage.outputTokens ?? 0) + (r.usage.reasoningTokens ?? 0))}` : '–'}</td>
               <td className={`r${failed ? ' bad' : ''}`} title={failed ? (r.failure_code ?? r.status) : ''}>{failed ? t('recent.failed') : r.status === 'running' ? '…' : usdc(r.charged_atomic, 4)}</td>

@@ -25,6 +25,12 @@ Then, in **Settings → Models**, add Router3 as a *Custom model API* with any p
 
 All three Router3 endpoints are read-only and authenticated by the API key alone; they never return the wallet address or the wallet's balance.
 
+### Recent calls and the trajectory
+
+A call the current session made shows its dsh request number in the first column, and clicking the row shows that request in dsh's **Trajectory** view. Calls from other sessions or tools show no number.
+
+The pairing is by evidence, since dsh keeps no Router3 request id: the request started within 20 seconds of the call, went to the same model, and, when both sides report it, produced the same number of output tokens. Two calls to the same model in the same second with the same output could swap. The trajectory data comes from dsh's `uiConversation` service; the jump itself goes through dsh's DOM (the view tab, then the request's row or its timeline span), because dsh offers no API for selecting a request from another plugin. If a dsh update changes that markup, the numbers stay and only the jump stops working.
+
 ## How it is built
 
 - `src/index.js` — host half. Registers `/api/router3/{sources,summary,usage,requests}` on dsh's authenticated API channel. `sources` walks dsh's configurable model providers (`ctx.llm`) and their stored settings (`ctx.settings`), keeps those whose base URL host is the configured Router3 host or whose credential starts with `r3_live_`, and names each one's credential reference (the profile's `apiKeyEnv`, else `<PROVIDER>_API_KEY` as the Models page stores it). The data routes take `?source=<provider id>`, resolve that reference through `ctx.credentials` on every call, and relay to that provider's gateway origin.
