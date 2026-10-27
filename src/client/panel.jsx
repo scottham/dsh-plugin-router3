@@ -157,15 +157,14 @@ function Usage({ t, usage }) {
       {usage.models.length > 0 && (
         <>
           <div className="r3-h"><span>{t('models.title')}</span></div>
-          <table className="r3-table">
-            <colgroup><col /><col style={{ width: '3.4em' }} /><col style={{ width: '3.8em' }} /><col style={{ width: '3.4em' }} /><col style={{ width: '4em' }} /></colgroup>
-            <thead><tr><th>{t('models.model')}</th><th className="r">{t('models.calls')}</th><th className="r">{t('models.tokens')}</th><th className="r">{t('models.avg')}</th><th className="r">{t('models.cost')}</th></tr></thead>
-            <tbody>{usage.models.slice(0, 8).map((m) => (
+          <Table t={t} id="models" columns={[
+            { key: 'model', label: t('models.model') }, { key: 'calls', label: t('models.calls'), width: '3.4em', className: 'r' }, { key: 'tokens', label: t('models.tokens'), width: '3.8em', className: 'r' },
+            { key: 'avg', label: t('models.avg'), width: '3.4em', className: 'r' }, { key: 'cost', label: t('models.cost'), width: '4em', className: 'r' }]}>
+            {usage.models.slice(0, 8).map((m) => (
               <tr key={m.model ?? '-'}><td title={m.model ?? ''}>{m.model ?? '–'}</td><td className="r">{m.requests.toLocaleString()}</td>
                 <td className="r">{tokens(Number(m.input_tokens) + Number(m.output_tokens) + Number(m.reasoning_tokens))}</td>
                 <td className="r">{seconds(m.avg_latency_ms)}</td><td className="r">{usdc(m.charged_atomic)}</td></tr>))}
-            </tbody>
-          </table>
+          </Table>
         </>
       )}
     </>
@@ -181,10 +180,10 @@ function Recent({ t, items, requests, locate }) {
   return (
     <>
       <div className="r3-h"><span>{t('recent.title')}</span></div>
-      <table className="r3-table">
-        <colgroup>{numbered && <col style={{ width: '2.4em' }} />}<col style={{ width: '6.4em' }} /><col /><col style={{ width: '6.2em' }} /><col style={{ width: '4em' }} /></colgroup>
-        <thead><tr>{numbered && <th className="n">#</th>}<th>{t('recent.time')}</th><th>{t('recent.model')}</th><th className="r">{t('recent.inOut')}</th><th className="r">{t('recent.cost')}</th></tr></thead>
-        <tbody>{items.map((r) => {
+      <Table t={t} id="recent" columns={[
+        numbered && { key: 'n', label: '#', width: '2.4em', className: 'n' }, { key: 'time', label: t('recent.time'), width: '6.4em' }, { key: 'model', label: t('recent.model') },
+        { key: 'io', label: t('recent.inOut'), width: '6.2em', className: 'r' }, { key: 'cost', label: t('recent.cost'), width: '4em', className: 'r' }]}>
+        {items.map((r) => {
           const failed = r.status !== 'completed' && r.status !== 'running';
           const match = paired.get(r.id);
           const hint = match ? t('recent.locate', { number: match.number, turn: match.turn, step: match.step }) : undefined;
@@ -195,9 +194,58 @@ function Recent({ t, items, requests, locate }) {
               <td className="r">{r.usage ? `${tokens(r.usage.inputTokens)} / ${tokens((r.usage.outputTokens ?? 0) + (r.usage.reasoningTokens ?? 0))}` : '–'}</td>
               <td className={`r${failed ? ' bad' : ''}`} title={failed ? (r.failure_code ?? r.status) : ''}>{failed ? t('recent.failed') : r.status === 'running' ? '…' : usdc(r.charged_atomic, 4)}</td>
             </tr>);
-        })}</tbody>
-      </table>
+        })}
+      </Table>
     </>
+  );
+}
+
+// A fixed-layout table whose column widths the user sets by dragging the
+// divider at the right of a header cell. One column (no `width`) takes what
+// the others leave; its divider resizes the column after it. Widths stick
+// per browser under the table's id; a double-click on a divider resets them.
+const COLS = 'router3.columns.';
+const MIN_PX = 24;
+const sizes = (id) => { try { const stored = JSON.parse(localStorage.getItem(COLS + id)); return stored && typeof stored === 'object' ? stored : {}; } catch { return {}; } };
+function Table({ t, id, columns, children }) {
+  const cols = columns.filter(Boolean);
+  const [custom, setCustom] = useState(() => sizes(id));
+  const width = (c) => custom[c.key] ?? c.width;
+  const flexAt = cols.findIndex((c) => c.width == null);
+  const onDown = (event, index) => {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    const row = event.currentTarget.closest('tr');
+    const cells = [...row.children];
+    // The divider after the flexible column resizes its neighbour instead, the
+    // other way round, so the neighbour's edge is what follows the pointer.
+    const target = index === flexAt ? index + 1 : index;
+    const sign = index === flexAt ? -1 : 1;
+    const start = cells[target].getBoundingClientRect().width;
+    const room = flexAt < 0 ? Infinity : cells[flexAt].getBoundingClientRect().width - MIN_PX;
+    const x0 = event.clientX;
+    const grip = event.currentTarget;
+    grip.setPointerCapture(event.pointerId);
+    grip.classList.add('on');
+    let next = custom;
+    const move = (e) => { const px = Math.round(Math.max(MIN_PX, Math.min(start + room, start + sign * (e.clientX - x0)))); next = { ...custom, [cols[target].key]: px }; setCustom(next); };
+    const up = () => {
+      grip.removeEventListener('pointermove', move); grip.removeEventListener('pointerup', up); grip.removeEventListener('pointercancel', up);
+      grip.classList.remove('on');
+      try { localStorage.setItem(COLS + id, JSON.stringify(next)); } catch { /* per-viewer convenience only */ }
+    };
+    grip.addEventListener('pointermove', move); grip.addEventListener('pointerup', up); grip.addEventListener('pointercancel', up);
+  };
+  const reset = () => { setCustom({}); try { localStorage.removeItem(COLS + id); } catch { /* ignore */ } };
+  return (
+    <table className="r3-table">
+      <colgroup>{cols.map((c) => { const w = width(c); return <col key={c.key} style={w == null ? undefined : { width: typeof w === 'number' ? `${w}px` : w }} />; })}</colgroup>
+      <thead><tr>{cols.map((c, i) => (
+        <th key={c.key} className={c.className}>{c.label}
+          {i < cols.length - 1 && <span className="grip" title={t('columns.grip')} onPointerDown={(e) => onDown(e, i)} onDoubleClick={reset} />}
+        </th>))}</tr></thead>
+      <tbody>{children}</tbody>
+    </table>
   );
 }
 

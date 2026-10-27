@@ -23,6 +23,8 @@ Then, in **Settings → Models**, add Router3 as a *Custom model API* with any p
 | Last 30 days bar chart and the by-model table | `GET /v1/key/usage?days=30` |
 | Recent calls with tokens, cost and failures | `GET /v1/key/requests` |
 
+Column widths in the two tables are yours to set: drag the divider at the right edge of a header cell, double-click it to go back to the defaults. The widths stick per browser.
+
 All three Router3 endpoints are read-only and authenticated by the API key alone; they never return the wallet address or the wallet's balance.
 
 ### Recent calls and the trajectory
